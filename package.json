@@ -1,7 +1,7 @@
 {
   "name": "doorfrequence_app",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "main.js",
   "repository": "git@github.com:SebastianMueller87/doorfrequence_app.git",
   "author": "Sebastian Müller <sebastian@sourceboat.com>",
   "license": "MIT",
