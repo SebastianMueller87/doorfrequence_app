@@ -6,9 +6,34 @@
   "author": "Sebastian Müller <sebastian@sourceboat.com>",
   "license": "MIT",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dev": "node_modules/webpack/bin/webpack.js --progress --hide-modules --config=node_modules/laravel-mix/setup/webpack.config.js",
+    "watch": "node_modules/webpack/bin/webpack.js --watch --progress --hide-modules --config=node_modules/laravel-mix/setup/webpack.config.js",
+    "prod": "node_modules/webpack/bin/webpack.js --progress --hide-modules --config=node_modules/laravel-mix/setup/webpack.config.js",
+    "lint": "run-p lint:*",
+    "lint:vue-sass": "sass-lint-vue app/src/**",
+    "lint:js": "eslint --ext .js,.vue app/src/**",
+    "precommit": "yarn run lint"
+
   },
   "devDependencies": {
-    "electron": "^1.8.2"
+    "electron": "^1.8.2",
+    "eslint": "^4.18.2",
+    "eslint-config-standard": "^11.0.0",
+    "eslint-plugin-import": "^2.9.0",
+    "eslint-plugin-node": "^6.0.1",
+    "eslint-plugin-standard": "^3.0.1",
+    "eslint-plugin-vue": "^4.3.0",
+    "husky": "^0.14.3",
+    "node-sass": "^4.7.2",
+    "npm-run-all": "^4.1.2",
+    "sass-lint": "^1.12.1",
+    "sass-lint-vue": "^0.2.1"
+  },
+  "dependencies": {
+    "laravel-mix": "^2.0.0",
+    "pug": "^2.0.0-rc.4",
+    "sass-loader": "^6.0.7",
+    "vue": "^2.5.13"
   }
 }
