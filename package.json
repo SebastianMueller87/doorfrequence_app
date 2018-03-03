@@ -14,7 +14,6 @@
     "lint:vue-sass": "sass-lint-vue app/src/**",
     "lint:js": "eslint --ext .js,.vue app/src/**",
     "precommit": "yarn run lint"
-
   },
   "devDependencies": {
     "electron": "^1.8.2",
@@ -31,6 +30,7 @@
     "sass-lint-vue": "^0.2.1"
   },
   "dependencies": {
+    "axios": "^0.18.0",
     "laravel-mix": "^2.0.0",
     "pug": "^2.0.0-rc.4",
     "sass-loader": "^6.0.7",
