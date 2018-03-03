@@ -5,6 +5,9 @@
   "repository": "git@github.com:SebastianMueller87/doorfrequence_app.git",
   "author": "Sebastian Müller <sebastian@sourceboat.com>",
   "license": "MIT",
+  "scripts": {
+    "start": "electron ."
+  },
   "devDependencies": {
     "electron": "^1.8.2"
   }
