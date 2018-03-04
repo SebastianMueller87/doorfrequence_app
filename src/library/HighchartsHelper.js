@@ -4,16 +4,16 @@ export default class HighchartsHelper {
   static createGraph (myData, highchartsContainer, period) {
     const self = this
 
-    let xAxisText = 'Uhr'
-    xAxisText = period ? `Uhr <br>Zeitraum: ${period.start} bis ${period.end}` : xAxisText
-
+    let xAxisText = 'Uhrzeit'
+    xAxisText = period ? `Uhrzeit <br>Zeitraum: ${period.start} bis ${period.end}` : xAxisText
     return Highcharts.chart(`${highchartsContainer}`, {
-        chart: { type: 'column' },
+        chart: { type: 'column'},
         title: { text: '' },
         xAxis: {
             title: {
               text: xAxisText
             },
+            categories: Object.keys(myData)
         },
         yAxis: {
             title: {
@@ -30,6 +30,7 @@ export default class HighchartsHelper {
             data: myData.map((item, index) => {
               return item.count
             }),
+            showInLegend: false,
             dataLabels: {
               enabled: true,
               rotation: -90,

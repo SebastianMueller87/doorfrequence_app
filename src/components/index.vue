@@ -6,11 +6,11 @@
         h4 Zeitraum
           div von {{this.startDateString}}
           div bis {{this.endDateString}}
-      button(v-on:click="onButtonClick()") Gesamt
-      button(v-on:click="onButtonClick('week', 'this')") This Week
-      button(v-on:click="onButtonClick('week', 'last')") Last Week
-      button(v-on:click="onButtonClick('day', 'today')") Today
-      button(v-on:click="onButtonClick('day', 'yesterday')") Yesterday
+      button(class="btn btn-sm" v-on:click="onButtonClick()") Gesamt
+      button(class="btn btn-sm" v-on:click="onButtonClick('week', 'this')") This Week
+      button(class="btn btn-sm" v-on:click="onButtonClick('week', 'last')") Last Week
+      button(class="btn btn-sm" v-on:click="onButtonClick('day', 'today')") Today
+      button(class="btn btn-sm" v-on:click="onButtonClick('day', 'yesterday')") Yesterday
       div(v-bind:id="this.id")
 </template>
 
@@ -134,6 +134,7 @@ export default {
 
         this.currentData = this.getCountPerHour(this.getOpeningsWithDuration(this.currentData))
       } else {
+        // TODO refresh start and end date
         this.currentData = this.openingPerHour
       }
 
