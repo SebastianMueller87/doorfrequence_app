@@ -54,7 +54,8 @@ export default {
         })
     },
 
-    updateGraph (dataSeries) {
+    updateGraph (myData) {
+      let vm = this
       Highcharts.chart(`${this.highchartsContainer}`, {
               chart: { type: 'column' },
               title: { text: '' },
@@ -71,19 +72,13 @@ export default {
               tooltip: {
                 shared: true,
                 useHTML: true,
-                formatter: function () {
-                  let s = '<table>'
-                  this.points.map((item) => {
-                    let unit = item.series.name === 'Öffnungen' ? '' : ' seconds'
-                    s += '<tr><th>' + item.series.name + '</th><td style="text-align: right;">' + item.y.toFixed(2) + ' ' + unit + ' </th></tr>'
-                  })
-
-                  return s
-                }
+                formatter: function () { return vm.formatTooltip(this.points, myData) }
               },
               series: [{
                   name: 'Öffnungen',
-                  data: dataSeries[0],
+                  data: myData.map((item, index) => {
+                    return item.count
+                  }),
                   dataLabels: {
                     enabled: true,
                     rotation: -90,
@@ -96,11 +91,39 @@ export default {
                         fontFamily: 'Verdana, sans-serif'
                     }
                 },
-              }, {
-                  name: 'Durchschnittliche Dauer',
-                  data: dataSeries[1],
               }]
           })
+    },
+
+    formatTooltip (points, myData) {
+       let s = '<table>'
+        points.map((item, index) => {
+
+          const durationInSeconds = myData[item.key].duration.toFixed(2)
+          let durationString =  ''
+          let minutes = Math.floor(durationInSeconds / 60)
+
+          let seconds = (durationInSeconds - minutes * 60).toFixed(0)
+
+          let hours = Math.floor(minutes / 60)
+          minutes = hours > 0 ? (minutes - hours * 60) : minutes
+
+          minutes = minutes < 10 ? `0${minutes}` : `${minutes}`
+          seconds = seconds < 10 ? `0${seconds}`: `${seconds}`
+
+          durationString = `${hours}:${minutes}:${seconds}`
+
+          s += `<tr>
+                  <th>${item.series.name}</th>
+                  <td style="text-align: right;">${item.y}</td>
+                </tr>
+                <tr>
+                  <th>durchschnittliche Dauer (h):</th>
+                  <td style="text-align: right;">${durationString}</td>
+                </tr>`
+        })
+
+        return s
     },
 
     getCountPerHour(data) {
@@ -138,7 +161,7 @@ export default {
       let data = this.getCountPerHour(this.dataWithDuration)
 
       let count = data.map((item, index) => {
-        return item.count
+        return {'count': item.count, 'duration': item.duration}
       })
 
 
@@ -147,19 +170,24 @@ export default {
         return seconds
       })
 
-      return [count, duration]
+      console.log(count)
+      return count
     },
 
     dataWithDuration: function () {
       let data = []
 
-      for(let i=0; i < this.data.length - 1; i++) {
-        if (this.data[i].value !== this.data[i + 1].value) {
-          let openingDate = moment.unix(this.data[i].timestamp / 1000)
-          let closingDate = moment.unix(this.data[i + 1].timestamp / 1000)
-          let duration = moment.duration(closingDate.diff(openingDate)).asSeconds()
-          data.push({ value: this.data[i].value, duration: duration, timestamp: this.data[i].timestamp })
-          i++
+      for(let i=1; i < this.data.length - 1; i++) {
+        // just evaluate from open (1) to closed (0)
+        if (this.data[i].value === 1) {
+          if (this.data[i].value !== this.data[i + 1].value) {
+            let openingDate = moment.unix(this.data[i].timestamp / 1000)
+            let closingDate = moment.unix(this.data[i + 1].timestamp / 1000)
+            let duration = moment.duration(closingDate.diff(openingDate)).asSeconds()
+            data.push({ value: this.data[i].value, duration: duration, timestamp: this.data[i].timestamp })
+            i++
+          }
+
         }
       }
       return data
