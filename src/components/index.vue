@@ -22,10 +22,7 @@ export default {
 
   data () {
     return {
-      data: [
-        'test',
-        'test2'
-      ],
+      data: [],
       id: '',
     }
   },
@@ -39,6 +36,7 @@ export default {
     this.highchartsContainer = `${this.id}`
 
     this.fetchData()
+
   },
 
   methods: {
@@ -56,7 +54,7 @@ export default {
         })
     },
 
-    updateGraph (data) {
+    updateGraph (dataSeries) {
       Highcharts.chart(`${this.highchartsContainer}`, {
               chart: { type: 'column' },
               title: { text: '' },
@@ -70,9 +68,22 @@ export default {
                       text: 'Öffnungen'
                   }
               },
+              tooltip: {
+                shared: true,
+                useHTML: true,
+                formatter: function () {
+                  let s = '<table>'
+                  this.points.map((item) => {
+                    let unit = item.series.name === 'Öffnungen' ? '' : ' seconds'
+                    s += '<tr><th>' + item.series.name + '</th><td style="text-align: right;">' + item.y.toFixed(2) + ' ' + unit + ' </th></tr>'
+                  })
+
+                  return s
+                }
+              },
               series: [{
                   name: 'Öffnungen',
-                  data: data,
+                  data: dataSeries[0],
                   dataLabels: {
                     enabled: true,
                     rotation: -90,
@@ -84,10 +95,32 @@ export default {
                         fontSize: '13px',
                         fontFamily: 'Verdana, sans-serif'
                     }
-                }
+                },
+              }, {
+                  name: 'Durchschnittliche Dauer',
+                  data: dataSeries[1],
               }]
           })
-    }
+    },
+
+    getCountPerHour(data) {
+      let returnData = Array(24).fill({})
+      returnData = returnData.map((item, index) => {
+        return { count: 0, duration: 0 }
+      })
+
+      // evaluate data
+      data.forEach((item, index) => {
+          let date = moment.unix(item.timestamp / 1000)
+          // TODO remove workaround duto failed data
+          if (date.hour() !== 6) {
+            returnData[date.hour()].count++
+            returnData[date.hour()].duration += item.duration
+          }
+      })
+
+      return returnData
+    },
   },
 
   computed: {
@@ -102,16 +135,35 @@ export default {
       })
     },
     openingPerHour: function () {
-      let data = new Array(24).fill(0)
+      let data = this.getCountPerHour(this.dataWithDuration)
 
-      this.openingData.forEach((item, index) => {
-        let date = moment.unix(item.timestamp / 1000)
-        if (date.hour() !== 6)
-          data[date.hour()]++
+      let count = data.map((item, index) => {
+        return item.count
       })
 
+
+      let duration = data.map((item, index) => {
+        let seconds = item.duration > 0 ? item.duration / item.count : item.duration
+        return seconds
+      })
+
+      return [count, duration]
+    },
+
+    dataWithDuration: function () {
+      let data = []
+
+      for(let i=0; i < this.data.length - 1; i++) {
+        if (this.data[i].value !== this.data[i + 1].value) {
+          let openingDate = moment.unix(this.data[i].timestamp / 1000)
+          let closingDate = moment.unix(this.data[i + 1].timestamp / 1000)
+          let duration = moment.duration(closingDate.diff(openingDate)).asSeconds()
+          data.push({ value: this.data[i].value, duration: duration, timestamp: this.data[i].timestamp })
+          i++
+        }
+      }
       return data
-    }
+    },
   }
 }
 
