@@ -6,6 +6,7 @@
       //- ul
       //-   li(v-bind:key="index" v-for="(item, index) in data")
       //-     span {{ item.timestamp }} : {{ item.value }}
+      div(v-bind:id="this.id")
       ul
         li(v-bind:key="index" v-for="(item, index) in openingPerHour")
           span {{ index }} : {{ item }}
@@ -13,6 +14,7 @@
 
 <script>
 const axios = require('axios')
+const Highcharts = require('highcharts')
 const moment = require('moment')
 
 export default {
@@ -23,7 +25,8 @@ export default {
       data: [
         'test',
         'test2'
-      ]
+      ],
+      id: '',
     }
   },
 
@@ -32,6 +35,8 @@ export default {
     this.port = 8000
     this.filename = 'data.json'
     console.log('Index.vue is created')
+    this.id = `graph-container-${this._uid}`
+    this.highchartsContainer = `${this.id}`
 
     this.fetchData()
   },
@@ -43,10 +48,45 @@ export default {
             this.data = Object.keys(response.data).map((key) => {
               return { timestamp: key, value: response.data[key] }
             })
+
+            this.updateGraph(this.openingPerHour)
         })
         .catch((error) => {
           console.error('Error: ', error)
         })
+    },
+
+    updateGraph (data) {
+      Highcharts.chart(`${this.highchartsContainer}`, {
+              chart: { type: 'column' },
+              title: { text: '' },
+              xAxis: {
+                  title: {
+                    text: 'Uhr'
+                  },
+              },
+              yAxis: {
+                  title: {
+                      text: 'Öffnungen'
+                  }
+              },
+              series: [{
+                  name: 'Öffnungen',
+                  data: data,
+                  dataLabels: {
+                    enabled: true,
+                    rotation: -90,
+                    color: '#FFFFFF',
+                    align: 'right',
+                    format: '{point.y}', // one decimal
+                    y: 10, // 10 pixels down from the top
+                    style: {
+                        fontSize: '13px',
+                        fontFamily: 'Verdana, sans-serif'
+                    }
+                }
+              }]
+          })
     }
   },
 
@@ -62,19 +102,12 @@ export default {
       })
     },
     openingPerHour: function () {
-      let data = []
+      let data = new Array(24).fill(0)
+
       this.openingData.forEach((item, index) => {
         let date = moment.unix(item.timestamp / 1000)
-
-        if (date.hour() == 6) {
-          console.log(date.format('DD.MM.YYYY hh:mm:ss'))
-        }
-
-        if (!data[date.hour()]) {
-          data[date.hour()] = 1
-        } else {
+        if (date.hour() !== 6)
           data[date.hour()]++
-        }
       })
 
       return data
