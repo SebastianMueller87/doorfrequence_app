@@ -3,9 +3,6 @@
     .header.text-center
       .col-12
         h1 Index.vue
-      //- ul
-      //-   li(v-bind:key="index" v-for="(item, index) in data")
-      //-     span {{ item.timestamp }} : {{ item.value }}
       div(v-bind:id="this.id")
       ul
         li(v-bind:key="index" v-for="(item, index) in openingPerHour")
@@ -14,8 +11,8 @@
 
 <script>
 const axios = require('axios')
-const Highcharts = require('highcharts')
 const moment = require('moment')
+const HighchartsHelper = require('../library/HighchartsHelper.js')
 
 export default {
   props: {},
@@ -33,7 +30,7 @@ export default {
     this.filename = 'data.json'
     console.log('Index.vue is created')
     this.id = `graph-container-${this._uid}`
-    this.highchartsContainer = `${this.id}`
+    this.graphContainer = `${this.id}`
 
     this.fetchData()
 
@@ -47,83 +44,11 @@ export default {
               return { timestamp: key, value: response.data[key] }
             })
 
-            this.updateGraph(this.openingPerHour)
+            HighchartsHelper.createGraph(this.openingPerHour, this.graphContainer)
         })
         .catch((error) => {
           console.error('Error: ', error)
         })
-    },
-
-    updateGraph (myData) {
-      let vm = this
-      Highcharts.chart(`${this.highchartsContainer}`, {
-              chart: { type: 'column' },
-              title: { text: '' },
-              xAxis: {
-                  title: {
-                    text: 'Uhr'
-                  },
-              },
-              yAxis: {
-                  title: {
-                      text: 'Öffnungen'
-                  }
-              },
-              tooltip: {
-                shared: true,
-                useHTML: true,
-                formatter: function () { return vm.formatTooltip(this.points, myData) }
-              },
-              series: [{
-                  name: 'Öffnungen',
-                  data: myData.map((item, index) => {
-                    return item.count
-                  }),
-                  dataLabels: {
-                    enabled: true,
-                    rotation: -90,
-                    color: '#FFFFFF',
-                    align: 'right',
-                    format: '{point.y}', // one decimal
-                    y: 10, // 10 pixels down from the top
-                    style: {
-                        fontSize: '13px',
-                        fontFamily: 'Verdana, sans-serif'
-                    }
-                },
-              }]
-          })
-    },
-
-    formatTooltip (points, myData) {
-       let s = '<table>'
-        points.map((item, index) => {
-
-          const durationInSeconds = myData[item.key].duration.toFixed(2)
-          let durationString =  ''
-          let minutes = Math.floor(durationInSeconds / 60)
-
-          let seconds = (durationInSeconds - minutes * 60).toFixed(0)
-
-          let hours = Math.floor(minutes / 60)
-          minutes = hours > 0 ? (minutes - hours * 60) : minutes
-
-          minutes = minutes < 10 ? `0${minutes}` : `${minutes}`
-          seconds = seconds < 10 ? `0${seconds}`: `${seconds}`
-
-          durationString = `${hours}:${minutes}:${seconds}`
-
-          s += `<tr>
-                  <th>${item.series.name}</th>
-                  <td style="text-align: right;">${item.y}</td>
-                </tr>
-                <tr>
-                  <th>durchschnittliche Dauer (h):</th>
-                  <td style="text-align: right;">${durationString}</td>
-                </tr>`
-        })
-
-        return s
     },
 
     getCountPerHour(data) {
@@ -152,11 +77,13 @@ export default {
         return item.value === 0
       })
     },
+
     closingData: function () {
       return this.data.filter((item, index) => {
         return item.value === 1
       })
     },
+
     openingPerHour: function () {
       let data = this.getCountPerHour(this.dataWithDuration)
 
@@ -170,7 +97,6 @@ export default {
         return seconds
       })
 
-      console.log(count)
       return count
     },
 
