@@ -2,18 +2,23 @@
   .app
     .header.text-center
       .col-12
-        h1 Index.vue
+        h1 Öffnungen {{this.count}}
+        h4 Zeitraum
+          div von {{this.startDateString}}
+          div bis {{this.endDateString}}
+      button(v-on:click="onButtonClick()") Gesamt
+      button(v-on:click="onButtonClick('week', 'this')") This Week
+      button(v-on:click="onButtonClick('week', 'last')") Last Week
+      button(v-on:click="onButtonClick('day', 'today')") Today
+      button(v-on:click="onButtonClick('day', 'yesterday')") Yesterday
       div(v-bind:id="this.id")
-      ul
-        li(v-bind:key="index" v-for="(item, index) in openingPerHour")
-          span {{ index }} : {{ item }}
 </template>
 
 <script>
+import HighchartsHelper from '../library/HighchartsHelper.js'
 const axios = require('axios')
 const moment = require('moment')
-// const HighchartsHelper = require('../library/HighchartsHelper.js')
-import HighchartsHelper from '../library/HighchartsHelper.js'
+
 export default {
   props: {},
 
@@ -21,6 +26,9 @@ export default {
     return {
       data: [],
       id: '',
+      currentData: [],
+      start: null,
+      end: null,
     }
   },
 
@@ -28,12 +36,9 @@ export default {
     this.baseUrl = 'http://192.168.178.54'
     this.port = 8000
     this.filename = 'data.json'
-    console.log('Index.vue is created')
     this.id = `graph-container-${this._uid}`
     this.graphContainer = `${this.id}`
-
     this.fetchData()
-
   },
 
   methods: {
@@ -43,8 +48,10 @@ export default {
             this.data = Object.keys(response.data).map((key) => {
               return { timestamp: key, value: response.data[key] }
             })
-            console.log(HighchartsHelper)
-            HighchartsHelper.createGraph(this.openingPerHour, this.graphContainer)
+
+            this.currentData = this.openingPerHour
+
+            HighchartsHelper.createGraph(this.currentData, this.graphContainer, this.currentPeriod)
         })
         .catch((error) => {
           console.error('Error: ', error)
@@ -54,7 +61,7 @@ export default {
     getCountPerHour(data) {
       let returnData = Array(24).fill({})
       returnData = returnData.map((item, index) => {
-        return { count: 0, duration: 0 }
+        return { count: 0, duration: 0, timestamp: 0}
       })
 
       // evaluate data
@@ -69,6 +76,70 @@ export default {
 
       return returnData
     },
+
+    getOpeningsWithDuration (data) {
+      let filteredData = []
+
+      for(let i=0; i < data.length - 1; i++) {
+        // just evaluate from open (1) to closed (0))
+        if (data[i].value === 1) {
+          // find next closing dataset
+          let counter = 1
+          let closingData = data[i + counter]
+          while (closingData.value !== 0) {
+            counter++
+            if (!data[i + counter]) {
+              break;
+            }
+            closingData = data[i + counter]
+          }
+
+
+          let openingDate = moment.unix(data[i].timestamp / 1000)
+          let closingDate = moment.unix(closingData.timestamp / 1000)
+          let duration = moment.duration(closingDate.diff(openingDate)).asSeconds()
+          filteredData.push({ value: data[i].value, duration: duration, timestamp: data[i].timestamp })
+          i = i + counter - 1
+
+
+          // Get initial start and end
+          if (!this.start) {
+            this.start = data[i].timestamp
+          }
+
+
+          if (!this.end || moment.unix(this.end/1000).isBefore(closingDate)) {
+            this.end = closingData.timestamp
+          }
+        }
+      }
+      return filteredData
+    },
+
+
+
+    onButtonClick (filterPeriodType, filterPeriod) {
+      if (filterPeriod && filterPeriodType) {
+        if (filterPeriodType === 'week') {
+          this.start = filterPeriod === 'this' ? moment().startOf('isoWeek') : moment().subtract(1, 'weeks').startOf('isoWeek')
+          this.end = filterPeriod === 'this' ? moment().endOf('isoWeek') : moment().subtract(1, 'weeks').endOf('isoWeek')
+        } else if (filterPeriodType === 'day') {
+          this.start = filterPeriod === 'today' ? moment().startOf('day') : moment().subtract(1, 'days').startOf('day')
+          this.end = filterPeriod === 'today' ? moment().endOf('day') : moment().subtract(1, 'days').endOf('day')
+        }
+
+        this.currentData = this.data.filter((item, index) => {
+          return moment.unix(item.timestamp/1000).isBetween(this.start, this.end)
+        })
+
+        this.currentData = this.getCountPerHour(this.getOpeningsWithDuration(this.currentData))
+      } else {
+        this.currentData = this.openingPerHour
+      }
+
+
+      HighchartsHelper.createGraph(this.currentData, this.graphContainer, this.currentPeriod)
+    }
   },
 
   computed: {
@@ -85,39 +156,31 @@ export default {
     },
 
     openingPerHour: function () {
-      let data = this.getCountPerHour(this.dataWithDuration)
-
-      let count = data.map((item, index) => {
-        return {'count': item.count, 'duration': item.duration}
-      })
-
-
-      let duration = data.map((item, index) => {
-        let seconds = item.duration > 0 ? item.duration / item.count : item.duration
-        return seconds
-      })
-
-      return count
+      return this.getCountPerHour(this.getOpeningsWithDuration(this.data))
     },
 
-    dataWithDuration: function () {
-      let data = []
+    count: function () {
+      let count = 0
+      this.currentData.map((item, index) => {
+        count = count + item.count
+      })
+      return `${count}`
+    },
 
-      for(let i=1; i < this.data.length - 1; i++) {
-        // just evaluate from open (1) to closed (0)
-        if (this.data[i].value === 1) {
-          if (this.data[i].value !== this.data[i + 1].value) {
-            let openingDate = moment.unix(this.data[i].timestamp / 1000)
-            let closingDate = moment.unix(this.data[i + 1].timestamp / 1000)
-            let duration = moment.duration(closingDate.diff(openingDate)).asSeconds()
-            data.push({ value: this.data[i].value, duration: duration, timestamp: this.data[i].timestamp })
-            i++
-          }
+    startDateString: function () {
+      return `${moment.unix(this.start/1000).format('DD.MM.YYYY HH:mm:ss')}`
+    },
 
-        }
+    endDateString: function () {
+      return `${moment.unix(this.end/1000).format('DD.MM.YYYY HH:mm:ss')}`
+    },
+
+    currentPeriod: function () {
+      return {
+        start: this.startDateString,
+        end: this.endDateString,
       }
-      return data
-    },
+    }
   }
 }
 

@@ -1,14 +1,18 @@
 const Highcharts = require('highcharts')
 
 export default class HighchartsHelper {
-  static createGraph (myData,highchartsContainer) {
+  static createGraph (myData, highchartsContainer, period) {
     const self = this
-    Highcharts.chart(`${highchartsContainer}`, {
+
+    let xAxisText = 'Uhr'
+    xAxisText = period ? `Uhr <br>Zeitraum: ${period.start} bis ${period.end}` : xAxisText
+
+    return Highcharts.chart(`${highchartsContainer}`, {
         chart: { type: 'column' },
         title: { text: '' },
         xAxis: {
             title: {
-              text: 'Uhr'
+              text: xAxisText
             },
         },
         yAxis: {
@@ -22,7 +26,7 @@ export default class HighchartsHelper {
           formatter: function () { return self.formatTooltip(this.points, myData) }
         },
         series: [{
-            name: 'Öffnungen',
+            name: 'Türaktionen',
             data: myData.map((item, index) => {
               return item.count
             }),
@@ -61,7 +65,7 @@ export default class HighchartsHelper {
       durationString = `${hours}:${minutes}:${seconds}`
 
       s += `<tr>
-              <th>${item.series.name} 123</th>
+              <th>${item.series.name}</th>
               <td style="text-align: right;">${item.y}</td>
             </tr>
             <tr>
