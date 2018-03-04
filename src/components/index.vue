@@ -12,8 +12,8 @@
 <script>
 const axios = require('axios')
 const moment = require('moment')
-const HighchartsHelper = require('../library/HighchartsHelper.js')
-
+// const HighchartsHelper = require('../library/HighchartsHelper.js')
+import HighchartsHelper from '../library/HighchartsHelper.js'
 export default {
   props: {},
 
@@ -43,7 +43,7 @@ export default {
             this.data = Object.keys(response.data).map((key) => {
               return { timestamp: key, value: response.data[key] }
             })
-
+            console.log(HighchartsHelper)
             HighchartsHelper.createGraph(this.openingPerHour, this.graphContainer)
         })
         .catch((error) => {

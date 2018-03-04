@@ -1,46 +1,48 @@
 const Highcharts = require('highcharts')
 
-module.exports.createGraph = (myData,highchartsContainer) => {
-  Highcharts.chart(`${highchartsContainer}`, {
-      chart: { type: 'column' },
-      title: { text: '' },
-      xAxis: {
-          title: {
-            text: 'Uhr'
-          },
-      },
-      yAxis: {
-          title: {
-              text: 'Öffnungen'
-          }
-      },
-      tooltip: {
-        shared: true,
-        useHTML: true,
-        formatter: function () { return formatTooltip(this.points, myData) }
-      },
-      series: [{
-          name: 'Öffnungen',
-          data: myData.map((item, index) => {
-            return item.count
-          }),
-          dataLabels: {
-            enabled: true,
-            rotation: -90,
-            color: '#FFFFFF',
-            align: 'right',
-            format: '{point.y}', // one decimal
-            y: 10, // 10 pixels down from the top
-            style: {
-                fontSize: '13px',
-                fontFamily: 'Verdana, sans-serif'
+export default class HighchartsHelper {
+  static createGraph (myData,highchartsContainer) {
+    const self = this
+    Highcharts.chart(`${highchartsContainer}`, {
+        chart: { type: 'column' },
+        title: { text: '' },
+        xAxis: {
+            title: {
+              text: 'Uhr'
+            },
+        },
+        yAxis: {
+            title: {
+                text: 'Öffnungen'
             }
         },
-      }]
-  })
+        tooltip: {
+          shared: true,
+          useHTML: true,
+          formatter: function () { return self.formatTooltip(this.points, myData) }
+        },
+        series: [{
+            name: 'Öffnungen',
+            data: myData.map((item, index) => {
+              return item.count
+            }),
+            dataLabels: {
+              enabled: true,
+              rotation: -90,
+              color: '#FFFFFF',
+              align: 'right',
+              format: '{point.y}', // one decimal
+              y: 10, // 10 pixels down from the top
+              style: {
+                  fontSize: '13px',
+                  fontFamily: 'Verdana, sans-serif'
+              }
+          },
+        }]
+    })
+  }
 
-  // inner helper function
-  formatTooltip = (points, myData) => {
+  static formatTooltip (points, myData) {
     let s = '<table>'
     points.map((item, index) => {
 
